@@ -7,45 +7,56 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.lifecycle.Observer
-import androidx.lifecycle.ViewModelProviders
+import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.Navigation
 import androidx.recyclerview.widget.LinearLayoutManager
 
 import com.devtides.memorynotes.R
+import com.devtides.memorynotes.databinding.FragmentListBinding
 import com.devtides.memorynotes.framework.ListViewModel
-import kotlinx.android.synthetic.main.fragment_list.*
+
 
 class ListFragment : Fragment(), ListAction {
 
     private val notesListAdapter = NotesListAdapter(arrayListOf(), this)
     private lateinit var viewModel: ListViewModel
 
+    private var _binding: FragmentListBinding? = null
+    private val binding get() = _binding!!
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        return inflater.inflate(R.layout.fragment_list, container, false)
+        _binding = FragmentListBinding.inflate(inflater, container, false)
+        val view = binding.root
+        return view
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        notesListView.apply {
+        binding.notesListView.apply {
             layoutManager = LinearLayoutManager(context)
             adapter = notesListAdapter
         }
 
-        addNote.setOnClickListener { goToNoteDetails() }
+        binding.addNote.setOnClickListener { goToNoteDetails() }
 
-        viewModel = ViewModelProviders.of(this).get(ListViewModel::class.java)
+        viewModel = ViewModelProvider(this)[ListViewModel::class.java]
 
         observeViewModel()
     }
 
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
+    }
+
     fun observeViewModel() {
-        viewModel.notes.observe(this, Observer {notesList ->
-            loadingView.visibility = View.GONE
-            notesListView.visibility = View.VISIBLE
+        viewModel.notes.observe(viewLifecycleOwner, Observer {notesList ->
+            binding.loadingView.visibility = View.GONE
+            binding.notesListView.visibility = View.VISIBLE
             notesListAdapter.updateNotes(notesList.sortedByDescending { it.updateTime })
         })
     }
@@ -57,7 +68,7 @@ class ListFragment : Fragment(), ListAction {
 
     private fun goToNoteDetails(id: Long = 0L) {
         val action = ListFragmentDirections.actionGoToNote(id)
-        Navigation.findNavController(notesListView).navigate(action)
+        Navigation.findNavController(binding.notesListView).navigate(action)
     }
 
     override fun onClick(id: Long) {
